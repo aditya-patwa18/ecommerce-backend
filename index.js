@@ -8,7 +8,6 @@ const path = require("path");
 const cors = require("cors");
 require("dotenv").config();
 
-
 app.use(express.json());
 app.use(cors());
 
@@ -17,7 +16,6 @@ app.use(cors());
 mongoose.connect(process.env.MONGO_URL)
 .then(()=>console.log("MongoDB connected"))
 .catch((err)=>console.log(err));
-
 
 
 // ================= API CHECK =================
@@ -38,10 +36,12 @@ const upload = multer({ storage: storage });
 
 app.use("/images", express.static("upload/images"));
 
+
+// 🔴 IMPORTANT FIX HERE
 app.post("/upload", upload.single("product"), (req, res) => {
   res.json({
     success: 1,
-    image_url: `http://localhost:${port}/images/${req.file.filename}`,
+    image_url: `https://ecommerce-backend-xmia.onrender.com/images/${req.file.filename}`,
   });
 });
 
@@ -61,6 +61,7 @@ const Product = mongoose.model("Product", {
 
 // ================= ADD PRODUCT =================
 app.post("/addproduct", async (req, res) => {
+
   let products = await Product.find({});
   let id;
 
@@ -118,7 +119,9 @@ const User = mongoose.model("Users", {
 
 // ================= SIGNUP =================
 app.post("/signup", async (req, res) => {
+
   let check = await User.findOne({ email: req.body.email });
+
   if (check) {
     return res.status(400).json({
       success: false,
@@ -146,27 +149,37 @@ app.post("/signup", async (req, res) => {
     },
   };
 
-  const token = jwt.sign(data, "secret_ecom");
+  const token = jwt.sign(data, process.env.JWT_SECRET);
+
   res.json({ success: true, token });
 });
 
 
 // ================= LOGIN =================
 app.post("/login", async (req, res) => {
+
   let existingUser = await User.findOne({ email: req.body.email });
+
   if (existingUser) {
+
     const passCompare = req.body.password === existingUser.password;
+
     if (passCompare) {
+
       const data = {
         user: {
           id: existingUser.id,
         },
       };
-      const token = jwt.sign(data, "secret_ecom");
+
+      const token = jwt.sign(data, process.env.JWT_SECRET);
+
       res.json({ success: true, token });
+
     } else {
       res.json({ success: false, error: "Wrong Password" });
     }
+
   } else {
     res.json({ success: false, error: "Wrong Email ID" });
   }
@@ -174,10 +187,6 @@ app.post("/login", async (req, res) => {
 
 
 // ================= START SERVER =================
-app.listen(port, (error) => {
-  if (!error) {
-    console.log("Server running on port " + port);
-  } else {
-    console.log("Error: " + error);
-  }
+app.listen(port, () => {
+  console.log("Server running on port " + port);
 });
